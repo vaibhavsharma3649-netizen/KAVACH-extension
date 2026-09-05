@@ -3,9 +3,11 @@
   "name": "Kavach",
   "version": "1.2.0",
   "description": "On-device PII/face/text redaction + server reasoning. PS26171.",
-  "permissions": ["activeTab", "scripting", "storage"],
+  "permissions": ["activeTab", "scripting", "storage", "webRequest"],
   "host_permissions": ["<all_urls>"],
   "action": { "default_popup": "popup.html", "default_title": "Vault Agent" },
   "background": { "service_worker": "background.js" },
-  "content_scripts": [{ "matches": ["http://*/*", "https://*/*"], "js": ["content.js"], "run_at": "document_idle" }]
+  "content_scripts": [{ "matches": ["http://*/*", "https://*/*"], "js": ["content.js"], "run_at": "document_idle" },
+    { "matches": ["http://*/*", "https://*/*"], "js": ["t3/kavach-utils.js", "t3/masking-stub.js", "t3/upload-interceptor.js", "t3/agent-detection.js", "t3/network-block.js"], "run_at": "document_start", "world": "MAIN" },
+    { "matches": ["http://*/*", "https://*/*"], "js": ["t3/kavach-bridge.js"], "run_at": "document_start" }]
 }

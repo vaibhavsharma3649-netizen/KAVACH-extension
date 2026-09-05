@@ -69,3 +69,27 @@ $("export").onclick = async () => {
   const tab = await getActiveTab();
   if (tab){ const r = await sendToTab(tab.id,{type:"VAULT_GET_LOG"}); const blob=new Blob([JSON.stringify(r?.auditLog||[],null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="vault-audit.json"; a.click(); }
 };
+
+// ---- Teammate-3 status block (own kavach_* keys; no-ops if section absent) ----
+(function () {
+  if (!document.getElementById("t3-enabled")) return;
+  const T3_DEFAULTS = { kavach_enabled: true, kavach_stats: { agentFlags: 0, observed: 0, blocked: 0 }, kavach_log: [] };
+  function render(res) {
+    const stats = res.kavach_stats || {};
+    $("t3-enabled").checked = res.kavach_enabled !== false;
+    $("t3-agent").textContent = stats.agentFlags || 0;
+    $("t3-obs").textContent = stats.observed || 0;
+    $("t3-block").textContent = stats.blocked || 0;
+    const ul = $("t3-log"); ul.innerHTML = "";
+    for (const e of (res.kavach_log || []).slice(0, 5)) {
+      const li = document.createElement("li");
+      li.textContent = "[" + (e.kind || "?") + "] " + (e.label || "") + " " + (e.at ? new Date(e.at).toLocaleTimeString() : "");
+      ul.appendChild(li);
+    }
+  }
+  function load() { chrome.storage.local.get(T3_DEFAULTS, render); }
+  $("t3-enabled").addEventListener("change", (e) => chrome.storage.local.set({ kavach_enabled: e.target.checked }));
+  $("t3-reset").addEventListener("click", () => chrome.storage.local.set({ kavach_stats: { agentFlags: 0, observed: 0, blocked: 0 }, kavach_log: [] }));
+  chrome.storage.onChanged.addListener((changes, area) => { if (area === "local" && (changes.kavach_stats || changes.kavach_log || changes.kavach_enabled)) load(); });
+  load();
+})();
