@@ -1,0 +1,9 @@
+node_modules/
+package-lock.json
+server/node_modules/
+extension/vendor/
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+vault-audit.json

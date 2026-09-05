@@ -1,0 +1,110 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"><title>ISRO Ops Dashboard — Demo</title>
+<style>
+body{font:14px system-ui;margin:0;background:#f1f5f9}
+header{background:#0f172a;color:#fff;padding:14px 20px;display:flex;justify-content:space-between}
+.card{background:#fff;border-radius:12px;padding:14px;margin:12px;box-shadow:0 1px 6px rgba(0,0,0,.08)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+button{padding:8px 14px;border-radius:8px;border:0;cursor:pointer;font-weight:600}
+.approve{background:#22c55e;color:#fff} .danger{background:#ef4444;color:#fff}
+input{padding:8px;border:1px solid #cbd5e1;border-radius:8px;width:100%}
+#faceZone{border:2px dashed #94a3b8;border-radius:12px;padding:16px;text-align:center;background:#f8fafc;cursor:pointer;transition:.15s}
+#faceZone.drag{border-color:#0ea5e9;background:#e0f2fe}
+#faceZone.hidden{display:none}
+#faceCanvas{width:100%;max-width:100%;border-radius:10px;background:#020617;display:none;margin-top:10px}
+#faceMeta{font:12px system-ui;color:#0369a1;margin-top:8px}
+.tag{font-size:11px;padding:2px 7px;border-radius:20px;background:#e0f2fe;border:1px solid #bae6fd}
+</style>
+</head>
+<body>
+<header><b>ISRO · Mission Ops Dashboard</b><span>Demo user: Dr. Sharma</span></header>
+
+<div class="grid">
+<div class="card">
+  <h3>Pending Request #1847</h3><p>Ground station calibration — requires approval.</p>
+
+  <!-- Drop zone: pure page function (no extension). Handles upload + preview. -->
+  <div id="faceZone">
+    <p><b>📸 Drop a photo here</b> or click to choose</p>
+    <p style="font-size:12px">Preview handled <b>by this page</b> (no extension needed).</p>
+    <input id="faceFile" type="file" accept="image/*" hidden>
+  </div>
+  <canvas id="faceCanvas" width="640" height="360"></canvas>
+  <div id="faceMeta"></div>
+
+  <div style="margin-top:14px;border-top:1px solid #e2e8f0;padding-top:10px">
+    <label>Aadhaar <input id="aadhaar" placeholder="1234 5678 9012" value="1234 5678 9012"></label><br><br>
+    <label>Email <input id="email" value="sharma@isro.gov.in"></label><br><br>
+    <label>Password <input type="password" id="pwd" value="Secret123!"></label><br><br>
+    <button class="approve" id="approve-btn" onclick="this.textContent='✅ Approved';document.getElementById('summary').scrollIntoView({behavior:'smooth'})">Approve</button>
+    <button class="danger" onclick="alert('Delete requires confirmation')">Delete</button>
+  </div>
+</div>
+
+<div class="card"><h3>Telemetry</h3><p>Signal: nominal. Battery: 87%.</p><canvas width="300" height="100" style="background:#e2e8f0;border-radius:8px"></canvas></div>
+</div>
+
+<div class="card" id="summary"><h3>Summary Log</h3><p id="log">Awaiting agent action…</p><button id="submit-btn" type="submit" onclick="document.getElementById('log').textContent='✅ Task completed — audit exported.'">Submit Report</button></div>
+
+<script>document.querySelectorAll("canvas")[1].getContext("2d").fillRect(10,10,280,80);</script>
+<script>
+// Pure page-side upload/preview — no chrome.* APIs, works with or without the extension.
+(function () {
+  var zone = document.getElementById("faceZone");
+  var fileEl = document.getElementById("faceFile");
+  var cvs = document.getElementById("faceCanvas");
+  var meta = document.getElementById("faceMeta");
+  if (!zone || !fileEl || !cvs) return;
+  var ctx = cvs.getContext("2d");
+
+  function showImage(img) {
+    var maxW = cvs.parentElement.clientWidth || 640;
+    var scale = Math.min(1, maxW / img.width);
+    var W = Math.max(1, Math.round(img.width * scale));
+    var H = Math.max(1, Math.round(img.height * scale));
+    cvs.width = W; cvs.height = H;
+    cvs.style.display = "block";
+    cvs.dataset.pageGen = String((parseInt(cvs.dataset.pageGen || "0", 10) || 0) + 1);
+    ctx.drawImage(img, 0, 0, W, H);
+    zone.classList.add("hidden");
+    if (meta) meta.textContent = "Loaded " + W + "x" + H + " — click here to choose another photo.";
+  }
+
+  function loadFile(file) {
+    if (!file) return;
+    if (!file.type || file.type.indexOf("image/") !== 0) {
+      if (meta) meta.textContent = "Please choose an image file.";
+      return;
+    }
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function () { showImage(img); URL.revokeObjectURL(url); };
+    img.onerror = function () {
+      URL.revokeObjectURL(url);
+      if (meta) meta.textContent = "Could not load that image.";
+    };
+    img.src = url;
+  }
+
+  zone.addEventListener("click", function (e) { if (e.target === fileEl) return; fileEl.click(); });
+  fileEl.addEventListener("change", function (e) {
+    if (e.target.files && e.target.files[0]) loadFile(e.target.files[0]);
+    e.target.value = "";
+  });
+  zone.addEventListener("dragover", function (e) { e.preventDefault(); zone.classList.add("drag"); });
+  zone.addEventListener("dragleave", function () { zone.classList.remove("drag"); });
+  zone.addEventListener("drop", function (e) {
+    e.preventDefault();
+    zone.classList.remove("drag");
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+  });
+  if (meta) meta.addEventListener("click", function () {
+    zone.classList.remove("hidden");
+    cvs.style.display = "none";
+  });
+})();
+</script>
+</body>
+</html>
