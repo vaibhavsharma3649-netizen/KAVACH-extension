@@ -31,6 +31,16 @@
   <div class="hint">Blur auto-applies on page. Export for audit.</div>
   <button style="width:100%;margin-top:6px" id="export">Export Audit Log</button>
   <div class="log-box" id="log">Waiting...</div>
+  <div id="t3" style="margin-top:10px;border-top:1px solid #334155;padding-top:10px">
+    <label style="display:flex;align-items:center;gap:8px;font-weight:600"><input type="checkbox" id="t3-enabled" checked> KAVACH protection</label>
+    <div style="display:flex;justify-content:space-between;margin-top:6px"><span>Agent fills flagged</span><b id="t3-agent">0</b></div>
+    <div style="display:flex;justify-content:space-between"><span>Requests observed</span><b id="t3-obs">0</b></div>
+    <div style="font-size:11px;color:#64748b">Background visibility only — domains seen, bodies never read here.</div>
+    <div style="display:flex;justify-content:space-between"><span>PII sends blocked</span><b id="t3-block">0</b></div>
+    <div style="font-size:11px;color:#64748b">Page-layer fetch/XHR block. Separate number, separate mechanism.</div>
+    <ul id="t3-log" style="list-style:none;font-size:11px;color:#94a3b8;margin-top:6px"></ul>
+    <button style="width:100%;margin-top:6px" id="t3-reset">Reset KAVACH counters</button>
+  </div>
   <script src="popup.js"></script>
 </body>
 </html>

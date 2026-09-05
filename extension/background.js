@@ -39,4 +39,8 @@
       return true;
     }
   });
+
+  // Teammate-3 section (own storage keys kavach_*, own message scope 'kavach'):
+  // keep entirely inside t3/t3-background.js so this file stays conflict-free.
+  try { importScripts("t3/t3-background.js"); } catch (e) { /* T3 stats/observer unavailable */ }
 })();

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>KAVACH demo form (serve via http://localhost:8000)</title>
+<style>
+  body { font: 14px system-ui; max-width: 640px; margin: 24px auto; padding: 0 16px; }
+  label { display: block; margin: 12px 0 4px; font-weight: 600; }
+  input[type=text] { width: 100%; padding: 8px; }
+  button { margin: 6px 8px 6px 0; padding: 8px 12px; cursor: pointer; }
+  #drop { margin-top: 12px; border: 2px dashed #9ca3af; border-radius: 8px; padding: 24px; text-align: center; color: #6b7280; }
+  #events { background: #111827; color: #d1fae5; padding: 12px; border-radius: 8px; min-height: 120px; white-space: pre-wrap; }
+  .note { color: #6b7280; font-size: 12px; }
+</style>
+</head>
+<body>
+<h1>KAVACH demo form</h1>
+<p class="note">Serve: <code>python -m http.server 8000</code> from <code>kavach-extension</code>, open <code>http://localhost:8000/demo/form.html</code> with the extension loaded. Human-fill button only focuses — type digits yourself for the trusted negative test.</p>
+
+<form id="demo-form">
+  <label for="aadhaar">Aadhaar number</label>
+  <input id="aadhaar" name="aadhaar" type="text" data-kavach-sensitive autocomplete="off" placeholder="e.g. 1234 5678 9012">
+  <label for="phone">Phone</label>
+  <input id="phone" name="phone" type="tel" data-kavach-sensitive autocomplete="off" placeholder="e.g. 9876543210">
+  <p>
+    <button type="button" id="btn-agent">1. Naive agent fill (untrusted)</button>
+    <button type="button" id="btn-human">2. Human-like fill (focus + you type)</button>
+    <button type="button" id="btn-fetch-pii">3. fetch() with fake PII (must block)</button>
+    <button type="button" id="btn-fetch-ok">4. fetch() benign (must pass)</button>
+  </p>
+  <label for="file">File upload (masked via interceptor)</label>
+  <input id="file" type="file" accept="image/*">
+  <div id="drop">Drop an image here, or paste a screenshot anywhere on this page.</div>
+  <p class="note" id="fetch-result"></p>
+</form>
+
+<h2>Page event bus (kavach-event)</h2>
+<pre id="events"></pre>
+
+<script>
+  const log = (m) => {
+    const el = document.getElementById('events');
+    el.textContent += m + '\n';
+  };
+  window.addEventListener('kavach-event', (e) => log('[event] ' + JSON.stringify(e.detail)));
+
+  document.getElementById('btn-agent').addEventListener('click', () => {
+    const el = document.getElementById('aadhaar');
+    el.value = '1234 5678 9012';
+    el.dispatchEvent(new Event('input', { bubbles: true })); // isTrusted:false
+    log('[demo] naive agent fill dispatched');
+  });
+  document.getElementById('btn-human').addEventListener('click', () => {
+    const el = document.getElementById('aadhaar');
+    el.focus();
+    log('[demo] field focused — now TYPE digits by hand (trusted path, gate must stay shut)');
+  });
+  document.getElementById('btn-fetch-pii').addEventListener('click', async () => {
+    const out = document.getElementById('fetch-result');
+    try {
+      await fetch('https://example.com/api', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ aadhaar: '1234 5678 9012' }),
+      });
+      out.textContent = 'UNEXPECTED: PII fetch went through.';
+    } catch (err) {
+      out.textContent = 'Blocked as expected: ' + err.message;
+    }
+  });
+  document.getElementById('btn-fetch-ok').addEventListener('click', async () => {
+    const out = document.getElementById('fetch-result');
+    try {
+      await fetch('https://example.com/api', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ hello: 'world' }),
+      });
+      out.textContent = 'Benign fetch attempted (may fail on network — key point: KAVACH did not block it).';
+    } catch (err) {
+      out.textContent = err.message === 'KAVACH blocked outgoing PII'
+        ? 'WRONG: benign fetch was blocked!'
+        : 'Benign fetch left alone by KAVACH (network error: ' + err.message + ').';
+    }
+  });
+  document.getElementById('file').addEventListener('change', (e) => {
+    log('[demo] file input now holds: ' + Array.from(e.target.files || []).map((f) => f.name + ' ' + f.type + ' ' + f.size + 'B').join(', '));
+  });
+</script>
+</body>
+</html>
